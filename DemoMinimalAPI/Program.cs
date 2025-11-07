@@ -1,4 +1,5 @@
 using DemoMinimalAPI.Data;
+using DemoMinimalAPI.Extensions;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,20 +37,7 @@ using (var scope = app.Services.CreateScope())
     app.UseSwaggerUI();
 }
 
-app.MapGet("/todos", async (IToDoData toDoService) => 
-    {
-        var todos = await toDoService.GetAllAsync();    
-        return TypedResults.Ok(todos);
-    })
-   .WithName("GetAllToDos")
-   .WithTags("ToDos");
-
-app.MapGet("/todos/{id}", async 
-    Task<Results<Ok<ToDo>, NotFound>> (IToDoData service, int id) => {
-     var todo = await service.GetByIdAsync(id);
-     return todo is not null ? TypedResults.Ok(todo) : TypedResults.NotFound();
-});
-
+app.MapToDoEndpoints();
 
 app.UseHttpsRedirection();
 
