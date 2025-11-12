@@ -1,7 +1,11 @@
+using DemoMinimalAPI.Configurations;
 using DemoMinimalAPI.Data;
 using DemoMinimalAPI.Extensions;
+using DemoMinimalAPI.Filters;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,9 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<IToDoData, ToDoService>();
-builder.Services.AddDbContext<ToDoDbContext>
-    (options => options.UseInMemoryDatabase("ToDoDb"));
+
+builder.Services.RegistersServices(builder.Configuration);
+
 
 var app = builder.Build();
 
@@ -38,7 +42,51 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapToDoEndpoints();
+//app.MapGet("/conf", (IConfiguration configuration) 
+//    =>
+//{ 
+//   //var welcomemessage = configuration["WelcomeMessage"];
+//   //var myAppSettingMessage = configuration["MyApp:Message"];
+//   //var pageSize = configuration["MyApp:PageSize"];
+//   //var succeeded = int.TryParse(pageSize, out var ps) ? ps : 0;
+//   //var features = configuration["MyApp:Features:EnableFeatureX"];
+//  // return myAppSettingMessage + $" {ps} {features}";
 
+//});
+
+app.MapGet("/conf", (IOptions<MyApp> options)
+    =>
+{
+    var message = options.Value.Message;
+    var pageSize = options.Value.PageSize;
+    var featureX = options.Value.EnableFeatureX;
+    return message + $" {pageSize} {featureX}";
+}).WithTags("Configuration");
+
+app.MapGet("/api/products/{id:int:min(1)}", (int id) => Results.Ok(new { Id = id }))
+    .WithTags("Products");
+
+app.MapGet("/api/users/{userName}", (string userName) => {
+    return Results.Ok( new { Username =  userName }); 
+})
+    .WithTags("Users");
+
+var v1 = app.MapGroup("/api/v1");
+var v2 = app.MapGroup("/api/v2");
+
+v1.MapGet("/categories/{id:int}",
+    (int id) => Results.Ok(new { Id = id, Version = 1 }))
+    .WithTags("v1/Categories");
+
+v2.MapGet("/categories/{id:int}",
+    (int id) => Results.Ok(new { Id = id * 3, Version = 2 }))
+     .WithTags("v2/Categories");
+
+
+app.MapGet("/tags/{name?}", (string? name) => Results.Ok(new {name}))
+    .AddEndpointFilter(new NotEmptyFilter())
+    .WithTags("tags");
+    
 app.UseHttpsRedirection();
 
 app.Run();
