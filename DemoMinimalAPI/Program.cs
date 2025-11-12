@@ -15,6 +15,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.RegistersServices(builder.Configuration);
+builder.Services.RegisterNorthwindDatabase(builder.Configuration);
 
 
 var app = builder.Build();
@@ -32,8 +33,6 @@ using (var scope = app.Services.CreateScope())
   dbcontext.SaveChanges();
 }
 
-
-
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
 {
@@ -42,51 +41,41 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapToDoEndpoints();
-//app.MapGet("/conf", (IConfiguration configuration) 
+app.MapNorthwindCategoriesEndpoints();
+
+//app.MapGet("/conf", (IOptions<MyApp> options)
 //    =>
-//{ 
-//   //var welcomemessage = configuration["WelcomeMessage"];
-//   //var myAppSettingMessage = configuration["MyApp:Message"];
-//   //var pageSize = configuration["MyApp:PageSize"];
-//   //var succeeded = int.TryParse(pageSize, out var ps) ? ps : 0;
-//   //var features = configuration["MyApp:Features:EnableFeatureX"];
-//  // return myAppSettingMessage + $" {ps} {features}";
+//{
+//    var message = options.Value.Message;
+//    var pageSize = options.Value.PageSize;
+//    var featureX = options.Value.EnableFeatureX;
+//    return message + $" {pageSize} {featureX}";
+//}).WithTags("Configuration");
 
-//});
+//app.MapGet("/api/products/{id:int:min(1)}", (int id) => Results.Ok(new { Id = id }))
+//    .WithTags("Products");
 
-app.MapGet("/conf", (IOptions<MyApp> options)
-    =>
-{
-    var message = options.Value.Message;
-    var pageSize = options.Value.PageSize;
-    var featureX = options.Value.EnableFeatureX;
-    return message + $" {pageSize} {featureX}";
-}).WithTags("Configuration");
+//app.MapGet("/api/users/{userName}", (string userName) => {
+//    return Results.Ok( new { Username =  userName }); 
+//})
+//    .WithTags("Users");
 
-app.MapGet("/api/products/{id:int:min(1)}", (int id) => Results.Ok(new { Id = id }))
-    .WithTags("Products");
+//var v1 = app.MapGroup("/api/v1");
+//var v2 = app.MapGroup("/api/v2");
 
-app.MapGet("/api/users/{userName}", (string userName) => {
-    return Results.Ok( new { Username =  userName }); 
-})
-    .WithTags("Users");
+//v1.MapGet("/categories/{id:int}",
+//    (int id) => Results.Ok(new { Id = id, Version = 1 }))
+//    .WithTags("v1/Categories");
 
-var v1 = app.MapGroup("/api/v1");
-var v2 = app.MapGroup("/api/v2");
-
-v1.MapGet("/categories/{id:int}",
-    (int id) => Results.Ok(new { Id = id, Version = 1 }))
-    .WithTags("v1/Categories");
-
-v2.MapGet("/categories/{id:int}",
-    (int id) => Results.Ok(new { Id = id * 3, Version = 2 }))
-     .WithTags("v2/Categories");
+//v2.MapGet("/categories/{id:int}",
+//    (int id) => Results.Ok(new { Id = id * 3, Version = 2 }))
+//     .WithTags("v2/Categories");
 
 
-app.MapGet("/tags/{name?}", (string? name) => Results.Ok(new {name}))
-    .AddEndpointFilter(new NotEmptyFilter())
-    .WithTags("tags");
-    
+//app.MapGet("/tags/{name?}", (string? name) => Results.Ok(new {name}))
+//    .AddEndpointFilter(new NotEmptyFilter())
+//    .WithTags("tags");
+
 app.UseHttpsRedirection();
 
 app.Run();
