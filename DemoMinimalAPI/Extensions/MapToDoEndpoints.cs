@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using Microsoft.ApplicationInsights;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DemoMinimalAPI.Extensions;
 
@@ -9,17 +10,35 @@ public static class ToDoEndpoints
     {
         var group = app.MapGroup("/todos").WithTags("ToDos");
 
-        group.MapGet("/", async (IToDoData toDoService) =>
+        group.MapGet("/", async (IToDoData toDoService, 
+            TelemetryClient telemetryClient,
+            ILogger<Program> logger) =>
             {
+                logger.LogInformation("Retrieving all the todos");
+                telemetryClient.TrackMetric("ToDoAdded", 500,   
+                    
+                    new Dictionary<string, string>
+                {
+                    { "ToDoDate" , DateTime.Now.ToString() }
+                });
+                // throw new Exception("Very big problem");
                 var todos = await toDoService.GetAllAsync();
+
+                logger.LogInformation($"We found {todos?.Count}");
+
                 return TypedResults.Ok(todos);
             })
            .WithName("GetAllToDos");
            
         group.MapGet("/{id}", async
-            Task<Results<Ok<ToDo>, NotFound>> (IToDoData service, int id) =>
+            Task<Results<Ok<ToDo>, NotFound>> (ILogger<Program> logger,IToDoData service, int id) =>
         {
+            logger.LogInformation($"ToDo: {id}");
             var todo = await service.GetByIdAsync(id);
+            if(todo is null)
+            {
+                logger.LogWarning("The requested id was not found: {ToDoId}", id);
+            }
             return todo is not null ? TypedResults.Ok(todo) : TypedResults.NotFound();
         })
         .WithName("GetToDo");
@@ -35,19 +54,23 @@ public static class ToDoEndpoints
             return TypedResults.Created($"/todos/{todo.Id}", todo);
         });
 
-        group.MapDelete("/{id:int}", async Task<Results<NoContent, NotFound>> (IToDoData service,  int id ) =>
+        group.MapDelete("/{id:int}", async Task<Results<NoContent, NotFound>> (ILogger<Program> logger, IToDoData service,  int id ) =>
         {
-            var removed = await service.DeleteAsync(id);
-
-            if(removed)
+            var userName = "demoUser";
+            var operation = "delete";
+            using (logger.BeginScope("{Operation} todo {ToDoId} for user {UserName}", operation, id, userName))
             {
-                return TypedResults.NoContent();
+                logger.LogWarning("Attempting to delete todo");
+                var removed = await service.DeleteAsync(id);
+                if (removed)
+                {
+                    return TypedResults.NoContent();
+                }
+                else
+                {
+                    return TypedResults.NotFound();
+                }
             }
-            else
-            {
-                return TypedResults.NotFound();
-            }
-
         });
 
 

@@ -1,2 +1,9 @@
 ﻿global using DemoMinimalAPI;
 global using DemoMinimalAPI.Interfaces;
+global using DemoMinimalAPI.Data;
+global using DemoMinimalAPI.Extensions;
+global using Microsoft.FeatureManagement;
+global using Serilog;
+global using Serilog.Events;
+global using Polly;
+global using Polly.Extensions;
